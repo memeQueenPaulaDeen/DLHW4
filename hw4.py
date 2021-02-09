@@ -14,7 +14,7 @@ class myLogistic(LogisticRegression):
         costVect = []
         if isinstance(X,pd.DataFrame):
             X = X.to_numpy()
-        if isinstance(y, pd.DataFrame):
+        if isinstance(y, pd.Series):
             y = y.to_numpy()
         self.classes_ = np.unique(y)
         lam = .1
@@ -30,11 +30,17 @@ class myLogistic(LogisticRegression):
 
         for x in range(num_steps):
             #self.coef_ = np.array(self.coef_ - (learningRate*1/len(y)*(self.sigmoid(X,self.coef_).reshape(y.shape)-y))@X  +lam/len(y)* self.coef_).reshape(1,2)
-            ypred = self.predict(X)#self.sigmoid(X, self.coef_).reshape(y.shape)
-            self.coef_ = np.array(self.coef_ - (learningRate * 1 / len(y) * (ypred - y)) @ X).reshape(1, len(X[0]))
-            self.intercept_ = self.intercept_ - (learningRate * 1 / len(y) * (ypred - y) @ X0)
-            cost = self.cost(X,y)
-            costVect.append(cost)
+
+            idx = 0
+            for singleDataPoint in X:
+
+                ypredVect= self.predict(X)#self.sigmoid(X, self.coef_).reshape(y.shape)
+                ypred = ypredVect[idx]
+                self.coef_ = self.coef_ - np.array((learningRate * 1 / len(y) * (ypred - y[idx])) * singleDataPoint).reshape(1, len(X[0]))
+                self.intercept_ = self.intercept_ - learningRate * 1 / len(y) * (ypred - y[idx]) #* 1 implied
+                cost = self.cost(X,y)
+                costVect.append(cost)
+                idx = idx+1
 
             # lookback = 2
             # if x > lookback:
@@ -94,18 +100,22 @@ if __name__ == '__main__':
     print("sk score:" + (str(clf.score(X_test,y_test))))
     print("sk params:" + (str(clf.coef_)))
     print("sk intercept:" + (str(clf.intercept_)))
-
-    myclf = myLogistic()
-
-    myclf.fit(X_train, y_train,3000,.01,plot=True)
-    skpred = myclf.predict(X_test)
-    print("my score:" + (str(myclf.score(X_test, y_test))))
-    print("my params:" + (str(myclf.coef_)))
-    print("my intercept:" + (str(myclf.intercept_)))
+    print()
 
 
+    for alpha in ([.1,.01,.001]):
+        myclf = myLogistic()
 
-    myclf = myLogistic()
+        myclf.fit(X_train, y_train,300,alpha,plot=True)
+        mypred = myclf.predict(X_test)
+        print('alpha: ' + str(alpha))
+        print("my score:" + (str(myclf.score(X_test, y_test))))
+        print("my params:" + (str(myclf.coef_)))
+        print("my intercept:" + (str(myclf.intercept_)))
+        print()
+
+    print('\n\n\n')
+    print('Classifications for Iris data set:')
     X, y = load_iris(return_X_y=True)
     X = X[np.logical_or(y==0 , y==1)]
     y = y[np.logical_or(y==0 , y==1)]
@@ -115,9 +125,12 @@ if __name__ == '__main__':
     clf.fit(X_train, y_train)
     skpred = clf.predict(X_test)
     print("sk score:" + (str(clf.score(X_test, y_test))))
+    print()
 
-
-    myclf.fit(X_train, y_train, 3000, .001, plot=True)
-    skpred = myclf.predict(X_test)
-    print("my score:" + (str(myclf.score(X_test, y_test))))
+    for alpha in ([.1, .01, .001]):
+        myclf = myLogistic()
+        myclf.fit(X_train, y_train, 300, alpha, plot=True)
+        mypred = myclf.predict(X_test)
+        print("my score:" + (str(myclf.score(X_test, y_test))))
+        print()
 
